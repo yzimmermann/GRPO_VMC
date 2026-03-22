@@ -671,8 +671,11 @@ EOF
 fi
 
 python -m pip install -U \\
-  absl-py attrs chex dm-haiku flax h5py kfac_jax ml-collections \\
-  numpy optax pandas pyblock pyscf scipy tables typing_extensions wandb
+  absl-py==1.4.0 attrs==21.2.0 chex==0.1.5 dm-haiku==0.0.9 \\
+  flax==0.6.1 h5py==3.8.0 kfac_jax==0.0.3 ml-collections==0.1.1 \\
+  numpy==1.21.5 optax==0.1.4 pandas==1.3.5 pyblock==0.6 \\
+  pyscf==2.1.1 scipy==1.7.3 tables==3.7.0 typing_extensions==4.5.0 \\
+  wandb
 
 python -m pip install --no-build-isolation "$LAPJAX_ROOT"
 python -m pip install --no-build-isolation --no-deps -e "$LAPNET_ROOT"
