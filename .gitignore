@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+summary.csv
+
+tmp_wandb_runner_test/
+q2vmc_h200_smoke/
+q2vmc_h200_paper/
+
+results/*/stdout.log
+results/*/train_stats.csv
+results/*/wandb_run.json
+results/*/wandb/

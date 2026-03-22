@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+cd "${Q2VMC_LAPNET_ROOT}" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > "${Q2VMC_RESULTS_ROOT}/results/lapnet__CO/stdout.log" 2>&1

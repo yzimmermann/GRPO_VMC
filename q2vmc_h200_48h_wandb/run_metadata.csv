@@ -1,0 +1,13 @@
+run_id,architecture,system_key,paper_name,config_name,electrons,results_subdir
+lapnet__Li2,lapnet,Li2,Li2,Li2,6,results/lapnet__Li2
+lapnet__NH3,lapnet,NH3,NH3,NH3,10,results/lapnet__NH3
+lapnet__CO,lapnet,CO,CO,CO,14,results/lapnet__CO
+lapnet__CH3NH2,lapnet,CH3NH2,CH3NH2,methylamine,16,results/lapnet__CH3NH2
+lapnet__C2H6O,lapnet,C2H6O,C2H6O,ethanol,26,results/lapnet__C2H6O
+lapnet__C4H6,lapnet,C4H6,C4H6,bicbut,30,results/lapnet__C4H6
+psiformer__Li2,psiformer,Li2,Li2,Li2,6,results/psiformer__Li2
+psiformer__NH3,psiformer,NH3,NH3,NH3,10,results/psiformer__NH3
+psiformer__CO,psiformer,CO,CO,CO,14,results/psiformer__CO
+psiformer__CH3NH2,psiformer,CH3NH2,CH3NH2,methylamine,16,results/psiformer__CH3NH2
+psiformer__C2H6O,psiformer,C2H6O,C2H6O,ethanol,26,results/psiformer__C2H6O
+psiformer__C4H6,psiformer,C4H6,C4H6,bicbut,30,results/psiformer__C4H6
