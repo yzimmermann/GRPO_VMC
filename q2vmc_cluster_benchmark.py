@@ -674,7 +674,7 @@ python -m pip install -U \\
   absl-py attrs chex dm-haiku flax h5py kfac_jax ml-collections \\
   numpy optax pandas pyblock pyscf scipy tables typing_extensions wandb
 
-python -m pip install --no-build-isolation -e "$LAPJAX_ROOT"
+python -m pip install --no-build-isolation "$LAPJAX_ROOT"
 python -m pip install --no-build-isolation --no-deps -e "$LAPNET_ROOT"
 
 cat <<EOF
