@@ -13,9 +13,12 @@ standard VMC optimizers.
 - `neural_helium_vmc_benchmark.py`
   Two-electron helium benchmark with independent reevaluation of final states.
 - `q2vmc_cluster_benchmark.py`
-  Generator for a cluster-ready LapNet/Psiformer benchmark pack.
+  Generator for a cluster-ready LapNet/Psiformer benchmark pack with both
+  baseline `kfac` and patched `grpo` optimizer runs.
 - `q2vmc_wandb_runner.py`
   Runtime wrapper that tails `train_stats.csv` and streams metrics to W&B.
+- `patches/lapnet_grpo.patch`
+  Patch applied to the pinned public LapNet checkout to add GRPO training.
 
 ## Ready-to-run cluster pack
 
@@ -23,6 +26,7 @@ standard VMC optimizers.
 LapNet codebase. It includes:
 
 - pinned upstream revisions for LapNet and LapJAX,
+- a LapNet patch that adds `grpo` as a trainable optimizer mode,
 - an H200-oriented Slurm array script,
 - per-run launcher scripts,
 - W&B tracking via `train_stats.csv`,

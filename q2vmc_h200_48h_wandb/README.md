@@ -6,9 +6,9 @@ to be pushed to a GPU cluster and launched as a Slurm array job.
 ## What It Benchmarks
 
 - Architectures: lapnet, psiformer
-- Systems: Li2, NH3, CO, CH3NH2, C2H6O, C4H6
+- Systems: C2H6O, C4H6, CH3NH2, CO, Li2, NH3
 - Preset: `paper`
-- Optimizer: `kfac` from the public LapNet codebase
+- Optimizers: grpo, kfac
 - W&B mode: `online`
 
 ## Files
@@ -18,6 +18,8 @@ to be pushed to a GPU cluster and launched as a Slurm array job.
 - `run_metadata.csv`: flat metadata table
 - `submit_q2vmc_array.slurm`: Slurm launcher
 - `bootstrap_q2vmc_env.sh`: reproducible checkout/bootstrap helper
+- `lapnet_grpo.patch`: patch applied to the pinned LapNet checkout to add GRPO
+- `q2vmc_cluster_benchmark.py`: self-contained summarize/generate helper
 - `q2vmc_wandb_runner.py`: CSV-to-W&B streaming wrapper
 - `results/<run_id>/`: output directory for each benchmark run
 
@@ -39,13 +41,16 @@ to be pushed to a GPU cluster and launched as a Slurm array job.
 
 4. Summarize finished runs:
 
-   `python q2vmc_cluster_benchmark.py summarize --outdir /Users/yoel/GPRO_VMC/q2vmc_h200_48h_wandb`
+   `python q2vmc_cluster_benchmark.py summarize --outdir "$PWD"`
 
 ## Notes
 
 - The harness uses the public LapNet repository for both `lapnet` and
   `psiformer`, because that repo already contains both network types and
   the exact small-to-medium molecule configs we want.
+- `bootstrap_q2vmc_env.sh` applies `lapnet_grpo.patch` after checking out
+  the pinned upstream commit, so the generated pack can launch either
+  baseline `kfac` runs or GRPO runs from the same code snapshot.
 - Each benchmark run is launched through `q2vmc_wandb_runner.py`, which
   tails `train_stats.csv` and forwards new rows to W&B.
 - `config.debug.deterministic=true` is enabled in the generated preset to

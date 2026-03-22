@@ -1,0 +1,284 @@
+diff --git a/lapnet/base_config.py b/lapnet/base_config.py
+index dafcf6a..445308d 100644
+--- a/lapnet/base_config.py
++++ b/lapnet/base_config.py
+@@ -60,7 +60,7 @@ def default() -> ml_collections.ConfigDict:
+       'multi_host': False, 
+       'optim': {
+           'iterations': 200000,  # number of iterations
+-          'optimizer': 'kfac',  # one of adam, kfac, lamb, none
++          'optimizer': 'kfac',  # one of adam, kfac, lamb, grpo, none
+           'rm_outlier': False,
+           'local_energy_outlier_width': 20.0,
+           # split the local energy into pieces to save memory
+@@ -95,6 +95,14 @@ def default() -> ml_collections.ConfigDict:
+               'eps': 1.e-8,
+               'eps_root': 0.0,
+           },
++          'grpo': {
++              'inner_steps': 4,
++              'clip_epsilon': 0.2,
++              'advantage_epsilon': 1.e-8,
++              'max_advantage': 5.0,
++              'inner_optimizer': 'adam',  # one of adam, lamb, sgd
++              'max_grad_norm': 1.0,
++          },
+       },
+       'log': {
+           'stats_frequency': 1,  # iterations between logging of stats
+diff --git a/lapnet/train.py b/lapnet/train.py
+index 5777aa4..bc054ea 100644
+--- a/lapnet/train.py
++++ b/lapnet/train.py
+@@ -131,7 +131,17 @@ class OptUpdate(Protocol):
+ 
+ StepResults = Tuple[jnp.ndarray, networks.ParamTree, Optional[optax.OptState],
+                     jnp.ndarray, qmc_loss_functions.AuxiliaryLossData,
+-                    jnp.ndarray]
++                    jnp.ndarray, Optional['GRPOStats']]
++
++
++@chex.dataclass
++class GRPOStats:
++  """Auxiliary metrics emitted by GRPO inner updates."""
++
++  objective: jnp.DeviceArray
++  clip_fractions: jnp.DeviceArray
++  approx_kls: jnp.DeviceArray
++  advantage_std: jnp.DeviceArray
+ 
+ 
+ class Step(Protocol):
+@@ -193,7 +203,7 @@ def make_training_step(
+     # Optimization step
+     new_params, state, loss, aux_data = optimizer_step(params, data, state,
+                                                        loss_key)
+-    return data, new_params, state, loss, aux_data, pmove
++    return data, new_params, state, loss, aux_data, pmove, None
+ 
+   return step
+ 
+@@ -236,7 +246,97 @@ def make_kfac_training_step(mcmc_step, damping: float,
+         data_iterator=iter([new_data]),
+         momentum=shared_mom,
+         damping=shared_damping)
+-    return new_data, new_params, state, stats['loss'], stats['aux'], pmove
++    return new_data, new_params, state, stats['loss'], stats['aux'], pmove, None
++
++  return step
++
++
++def _global_mask_sum(mask: jnp.ndarray) -> jnp.ndarray:
++  return constants.psum(jnp.sum(mask))
++
++
++def _masked_global_mean(value: jnp.ndarray, mask: jnp.ndarray) -> jnp.ndarray:
++  denom = jnp.maximum(_global_mask_sum(mask), 1.0)
++  numer = constants.psum(jnp.sum(value * mask))
++  return numer / denom
++
++
++def _masked_global_fraction(value: jnp.ndarray, mask: jnp.ndarray) -> jnp.ndarray:
++  denom = jnp.maximum(_global_mask_sum(mask), 1.0)
++  numer = constants.psum(jnp.sum(value * mask))
++  return numer / denom
++
++
++def make_grpo_training_step(
++    mcmc_step,
++    total_energy: qmc_loss_functions.TotalEnergy,
++    batch_network: networks.LogWaveFuncLike,
++    optimizer: optax.GradientTransformation,
++    inner_steps: int,
++    clip_epsilon: float,
++    advantage_epsilon: float,
++    max_advantage: float,
++) -> Step:
++  """Factory to create a GRPO step: one MCMC sample pass plus K inner updates."""
++
++  @functools.partial(constants.pmap, donate_argnums=(1, 2, 3, 4))
++  def step(data: jnp.ndarray,
++           params: networks.ParamTree, state: Optional[optax.OptState],
++           key: chex.PRNGKey, mcmc_width: jnp.ndarray) -> StepResults:
++    mcmc_key, loss_key = jax.random.split(key, num=2)
++    data, pmove = mcmc_step(params, data, mcmc_key, mcmc_width)
++
++    loss, aux_data = total_energy(params, loss_key, data)
++    mask = jax.lax.stop_gradient(aux_data.outlier_mask.astype(aux_data.local_energy.dtype))
++    masked_count = jnp.maximum(_global_mask_sum(mask), 1.0)
++
++    local_energy = jax.lax.stop_gradient(aux_data.local_energy)
++    centered_energy = (local_energy - jax.lax.stop_gradient(loss)) * mask
++    variance = constants.psum(jnp.sum(centered_energy**2)) / masked_count
++    advantage_std = jnp.sqrt(jnp.maximum(variance, 0.0))
++    std_denom = jnp.maximum(advantage_std, advantage_epsilon)
++    advantages = -centered_energy / std_denom
++    if max_advantage > 0.0:
++      advantages = jnp.clip(advantages, -max_advantage, max_advantage)
++    advantages = jax.lax.stop_gradient(advantages)
++    old_log_psi = jax.lax.stop_gradient(batch_network(params, data))
++
++    def grpo_loss(curr_params: networks.ParamTree):
++      log_psi = batch_network(curr_params, data)
++      log_ratio = jnp.clip(2.0 * (log_psi - old_log_psi), a_min=-30.0, a_max=30.0)
++      ratio = jnp.exp(log_ratio)
++      clipped_ratio = jnp.clip(ratio, 1.0 - clip_epsilon, 1.0 + clip_epsilon)
++      surrogate_unclipped = ratio * advantages
++      surrogate_clipped = jax.lax.stop_gradient(clipped_ratio) * advantages
++      objective = _masked_global_mean(
++          jnp.minimum(surrogate_unclipped, surrogate_clipped), mask)
++      clip_fraction = _masked_global_fraction(
++          (ratio != clipped_ratio).astype(mask.dtype), mask)
++      approx_kl = _masked_global_mean(ratio - 1.0 - log_ratio, mask)
++      return -objective, (objective, clip_fraction, approx_kl)
++
++    def inner_update(carry, _):
++      curr_params, curr_state = carry
++      (loss_value, (objective, clip_fraction, approx_kl)), grad = jax.value_and_grad(
++          grpo_loss, has_aux=True)(curr_params)
++      del loss_value
++      grad = constants.pmean(grad)
++      updates, curr_state = optimizer.update(grad, curr_state, curr_params)
++      curr_params = optax.apply_updates(curr_params, updates)
++      return (curr_params, curr_state), (objective, clip_fraction, approx_kl)
++
++    (new_params, new_state), (objectives, clip_fractions, approx_kls) = jax.lax.scan(
++        inner_update,
++        (params, state),
++        xs=None,
++        length=inner_steps)
++
++    grpo_stats = GRPOStats(
++        objective=objectives[-1],
++        clip_fractions=clip_fractions,
++        approx_kls=approx_kls,
++        advantage_std=advantage_std)
++    return data, new_params, new_state, loss, aux_data, pmove, grpo_stats
+ 
+   return step
+ 
+@@ -373,6 +473,19 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+ 
+   # Set up logging
+   train_schema = ['step', 'energy', 'var', 'ewmean', 'ewvar', 'pmove', 'num_outliers', 'num_det']
++  if cfg.optim.optimizer == 'grpo':
++    train_schema.extend([
++        'grpo_objective',
++        'grpo_advantage_std',
++        'grpo_clip_mean',
++        'grpo_clip_max',
++        'grpo_kl_mean',
++        'grpo_kl_max',
++    ])
++    train_schema.extend(
++        [f'grpo_clip_{i}' for i in range(cfg.optim.grpo.inner_steps)])
++    train_schema.extend(
++        [f'grpo_kl_{i}' for i in range(cfg.optim.grpo.inner_steps)])
+ 
+   # Initialization done. We now want to have different PRNG streams on each
+   # device. Shard the key over devices
+@@ -478,6 +591,26 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+         optax.scale_by_trust_ratio(),
+         optax.scale_by_schedule(learning_rate_schedule),
+         optax.scale(-1))
++    elif cfg.optim.optimizer == 'grpo':
++      inner_transformations = []
++      if cfg.optim.grpo.max_grad_norm > 0.0:
++        inner_transformations.append(
++            optax.clip_by_global_norm(cfg.optim.grpo.max_grad_norm))
++      if cfg.optim.grpo.inner_optimizer == 'adam':
++        inner_transformations.append(optax.scale_by_adam(**cfg.optim.adam))
++      elif cfg.optim.grpo.inner_optimizer == 'lamb':
++        inner_transformations.append(optax.scale_by_adam(eps=1e-7))
++        inner_transformations.append(optax.scale_by_trust_ratio())
++      elif cfg.optim.grpo.inner_optimizer == 'sgd':
++        pass
++      else:
++        raise ValueError(
++            f'Not a recognized GRPO inner optimizer: {cfg.optim.grpo.inner_optimizer}')
++      inner_transformations.extend([
++          optax.scale_by_schedule(learning_rate_schedule),
++          optax.scale(-1.0),
++      ])
++      optimizer = optax.chain(*inner_transformations)
+     elif cfg.optim.optimizer == 'kfac':
+       optimizer = kfac_jax.Optimizer(
+         val_and_grad,
+@@ -533,6 +666,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+         return params, opt_state, loss, aux_data
+ 
+       step = make_training_step(mcmc_step=mcmc_step, optimizer_step=opt_update)
++    elif cfg.optim.optimizer == 'grpo':
++      opt_state = jax.pmap(optimizer.init)(params)
++      opt_state = opt_state_ckpt or opt_state  # avoid overwriting ckpted state
++      step = make_grpo_training_step(
++          mcmc_step=mcmc_step,
++          total_energy=total_energy,
++          batch_network=batch_network,
++          optimizer=optimizer,
++          inner_steps=cfg.optim.grpo.inner_steps,
++          clip_epsilon=cfg.optim.grpo.clip_epsilon,
++          advantage_epsilon=cfg.optim.grpo.advantage_epsilon,
++          max_advantage=cfg.optim.grpo.max_advantage)
+     elif isinstance(optimizer, kfac_jax.Optimizer):
+       step = make_kfac_training_step(
+           mcmc_step=mcmc_step,
+@@ -624,7 +769,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+           )
+ 
+       sharded_key, subkeys = kfac_jax.utils.p_split(sharded_key)
+-      data, params, opt_state, loss, aux_data, pmove = step(
++      data, params, opt_state, loss, aux_data, pmove, extra_stats = step(
+           data=data,
+           params=params,
+           state=opt_state,
+@@ -657,11 +802,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+       # Logging
+       if t % cfg.log.stats_frequency == 0:
+ 
+-        logging.info(
+-            'Step %05d: %03.4f E_h, batch_var=%03.4f, exp. variance=%03.4f E_h^2, pmove=%0.2f, num_outliers=%d, num_det=%d, time=%.2f',
+-            t, loss, batch_var, weighted_stats.variance, pmove, num_outliers, num_det, end_time - init_time)
+-        writer.write(
+-            t,
++        log_kwargs = dict(
+             step=t,
+             energy=np.asarray(loss),
+             var=np.asarray(batch_var),
+@@ -671,6 +812,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+             num_outliers=np.asarray(num_outliers),
+             num_det=np.asarray(num_det))
+ 
++        if extra_stats is not None:
++          objective = extra_stats.objective[0]
++          advantage_std = extra_stats.advantage_std[0]
++          clip_fractions = np.asarray(extra_stats.clip_fractions[0])
++          approx_kls = np.asarray(extra_stats.approx_kls[0])
++          log_kwargs.update(
++              grpo_objective=np.asarray(objective),
++              grpo_advantage_std=np.asarray(advantage_std),
++              grpo_clip_mean=np.asarray(np.mean(clip_fractions)),
++              grpo_clip_max=np.asarray(np.max(clip_fractions)),
++              grpo_kl_mean=np.asarray(np.mean(approx_kls)),
++              grpo_kl_max=np.asarray(np.max(approx_kls)))
++          for idx, value in enumerate(clip_fractions):
++            log_kwargs[f'grpo_clip_{idx}'] = np.asarray(value)
++          for idx, value in enumerate(approx_kls):
++            log_kwargs[f'grpo_kl_{idx}'] = np.asarray(value)
++          logging.info(
++              'Step %05d: %03.4f E_h, batch_var=%03.4f, exp. variance=%03.4f E_h^2, '
++              'pmove=%0.2f, num_outliers=%d, num_det=%d, grpo_obj=%0.4f, '
++              'clip_mean=%0.3f, clip_max=%0.3f, time=%.2f',
++              t, loss, batch_var, weighted_stats.variance, pmove, num_outliers,
++              num_det, objective, np.mean(clip_fractions), np.max(clip_fractions),
++              end_time - init_time)
++        else:
++          logging.info(
++              'Step %05d: %03.4f E_h, batch_var=%03.4f, exp. variance=%03.4f E_h^2, pmove=%0.2f, num_outliers=%d, num_det=%d, time=%.2f',
++              t, loss, batch_var, weighted_stats.variance, pmove, num_outliers, num_det, end_time - init_time)
++
++        writer.write(t, **log_kwargs)
++
+       # Checkpointing
+       if should_save_ckpt(t, time_of_last_ckpt):
+           # no checkpointing in inference mode

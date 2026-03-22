@@ -1,9 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-ROOT="${1:-$PWD/external}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${1:-$SCRIPT_DIR/external}"
 PYTHON_BIN="${Q2VMC_PYTHON:-python3.10}"
-VENV_DIR="${Q2VMC_VENV:-$PWD/.venv-q2vmc}"
+VENV_DIR="${Q2VMC_VENV:-$SCRIPT_DIR/.venv-q2vmc}"
 LAPNET_ROOT="${Q2VMC_LAPNET_ROOT:-$ROOT/LapNet}"
 LAPJAX_ROOT="${Q2VMC_LAPJAX_ROOT:-$ROOT/lapjax}"
 
@@ -20,6 +21,15 @@ if [[ ! -d "$LAPJAX_ROOT/.git" ]]; then
 fi
 git -C "$LAPJAX_ROOT" fetch --all --tags
 git -C "$LAPJAX_ROOT" checkout "f50f734d6f289c468264835f36fc4f9cc6667db0"
+
+if git -C "$LAPNET_ROOT" apply --check "$SCRIPT_DIR/lapnet_grpo.patch" >/dev/null 2>&1; then
+  git -C "$LAPNET_ROOT" apply "$SCRIPT_DIR/lapnet_grpo.patch"
+elif git -C "$LAPNET_ROOT" apply --reverse --check "$SCRIPT_DIR/lapnet_grpo.patch" >/dev/null 2>&1; then
+  echo "LapNet GRPO patch already applied."
+else
+  echo "Could not apply lapnet_grpo.patch cleanly." >&2
+  exit 1
+fi
 
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 # shellcheck disable=SC1090

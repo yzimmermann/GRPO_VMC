@@ -3,6 +3,18 @@
   "launcher": {
     "array_parallelism": 1,
     "gpus_per_job": 4,
+    "grpo": {
+      "clip_epsilon": 0.2,
+      "inner_optimizer": "adam",
+      "inner_steps": 4,
+      "lr_rate": 0.001,
+      "max_advantage": 5.0,
+      "max_grad_norm": 1.0
+    },
+    "optimizers": [
+      "kfac",
+      "grpo"
+    ],
     "time": "48:00:00",
     "wandb_entity": "",
     "wandb_group": "q2vmc-paper",
@@ -29,10 +41,11 @@
   "runs": [
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2 --run-id=lapnet__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__Li2/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__Li2",
-      "run_id": "lapnet__Li2",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2 --run-id=kfac__lapnet__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__Li2/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__Li2",
+      "run_id": "kfac__lapnet__Li2",
       "system": {
         "config_name": "Li2",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -43,10 +56,11 @@
     },
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3 --run-id=lapnet__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__NH3/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__NH3",
-      "run_id": "lapnet__NH3",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3 --run-id=kfac__lapnet__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__NH3/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__NH3",
+      "run_id": "kfac__lapnet__NH3",
       "system": {
         "config_name": "NH3",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -57,10 +71,11 @@
     },
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO --run-id=lapnet__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet CO --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__CO/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__CO",
-      "run_id": "lapnet__CO",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO --run-id=kfac__lapnet__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet CO --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CO/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__CO",
+      "run_id": "kfac__lapnet__CO",
       "system": {
         "config_name": "CO",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -71,10 +86,11 @@
     },
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2 --run-id=lapnet__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__CH3NH2/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__CH3NH2",
-      "run_id": "lapnet__CH3NH2",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2 --run-id=kfac__lapnet__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__CH3NH2/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__CH3NH2",
+      "run_id": "kfac__lapnet__CH3NH2",
       "system": {
         "config_name": "methylamine",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -85,10 +101,11 @@
     },
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O --run-id=lapnet__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__C2H6O/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__C2H6O",
-      "run_id": "lapnet__C2H6O",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O --run-id=kfac__lapnet__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C2H6O/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__C2H6O",
+      "run_id": "kfac__lapnet__C2H6O",
       "system": {
         "config_name": "ethanol",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -99,10 +116,11 @@
     },
     {
       "architecture": "lapnet",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6 --run-id=lapnet__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper lapnet C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/lapnet__C4H6/stdout.log\" 2>&1",
-      "results_subdir": "results/lapnet__C4H6",
-      "run_id": "lapnet__C4H6",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6 --run-id=kfac__lapnet__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac lapnet C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__lapnet__C4H6/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__lapnet__C4H6",
+      "run_id": "kfac__lapnet__C4H6",
       "system": {
         "config_name": "bicbut",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -113,10 +131,11 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2 --run-id=psiformer__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__Li2/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__Li2",
-      "run_id": "psiformer__Li2",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2 --run-id=kfac__psiformer__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__Li2/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__Li2",
+      "run_id": "kfac__psiformer__Li2",
       "system": {
         "config_name": "Li2",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -127,10 +146,11 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3 --run-id=psiformer__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__NH3/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__NH3",
-      "run_id": "psiformer__NH3",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3 --run-id=kfac__psiformer__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__NH3/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__NH3",
+      "run_id": "kfac__psiformer__NH3",
       "system": {
         "config_name": "NH3",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -141,10 +161,11 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__CO --run-id=psiformer__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer CO --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__CO/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__CO",
-      "run_id": "psiformer__CO",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO --run-id=kfac__psiformer__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer CO --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CO/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__CO",
+      "run_id": "kfac__psiformer__CO",
       "system": {
         "config_name": "CO",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -155,10 +176,11 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2 --run-id=psiformer__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__CH3NH2/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__CH3NH2",
-      "run_id": "psiformer__CH3NH2",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2 --run-id=kfac__psiformer__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__CH3NH2/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__CH3NH2",
+      "run_id": "kfac__psiformer__CH3NH2",
       "system": {
         "config_name": "methylamine",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -169,10 +191,11 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O --run-id=psiformer__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__C2H6O/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__C2H6O",
-      "run_id": "psiformer__C2H6O",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O --run-id=kfac__psiformer__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C2H6O/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__C2H6O",
+      "run_id": "kfac__psiformer__C2H6O",
       "system": {
         "config_name": "ethanol",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
@@ -183,10 +206,191 @@
     },
     {
       "architecture": "psiformer",
-      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6 --run-id=psiformer__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper psiformer C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
-      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/psiformer__C4H6/stdout.log\" 2>&1",
-      "results_subdir": "results/psiformer__C4H6",
-      "run_id": "psiformer__C4H6",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6 --run-id=kfac__psiformer__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper kfac psiformer C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=kfac --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false > \"${Q2VMC_RESULTS_ROOT}/results/kfac__psiformer__C4H6/stdout.log\" 2>&1",
+      "optimizer": "kfac",
+      "results_subdir": "results/kfac__psiformer__C4H6",
+      "run_id": "kfac__psiformer__C4H6",
+      "system": {
+        "config_name": "bicbut",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 30,
+        "paper_name": "C4H6"
+      },
+      "system_key": "C4H6"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2 --run-id=grpo__lapnet__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__Li2/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__Li2",
+      "run_id": "grpo__lapnet__Li2",
+      "system": {
+        "config_name": "Li2",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 6,
+        "paper_name": "Li2"
+      },
+      "system_key": "Li2"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3 --run-id=grpo__lapnet__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__NH3/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__NH3",
+      "run_id": "grpo__lapnet__NH3",
+      "system": {
+        "config_name": "NH3",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 10,
+        "paper_name": "NH3"
+      },
+      "system_key": "NH3"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO --run-id=grpo__lapnet__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet CO --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CO/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__CO",
+      "run_id": "grpo__lapnet__CO",
+      "system": {
+        "config_name": "CO",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 14,
+        "paper_name": "CO"
+      },
+      "system_key": "CO"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2 --run-id=grpo__lapnet__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__CH3NH2/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__CH3NH2",
+      "run_id": "grpo__lapnet__CH3NH2",
+      "system": {
+        "config_name": "methylamine",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 16,
+        "paper_name": "CH3NH2"
+      },
+      "system_key": "CH3NH2"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O --run-id=grpo__lapnet__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C2H6O/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__C2H6O",
+      "run_id": "grpo__lapnet__C2H6O",
+      "system": {
+        "config_name": "ethanol",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 26,
+        "paper_name": "C2H6O"
+      },
+      "system_key": "C2H6O"
+    },
+    {
+      "architecture": "lapnet",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6 --run-id=grpo__lapnet__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo lapnet C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=lapnet --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__lapnet__C4H6/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__lapnet__C4H6",
+      "run_id": "grpo__lapnet__C4H6",
+      "system": {
+        "config_name": "bicbut",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 30,
+        "paper_name": "C4H6"
+      },
+      "system_key": "C4H6"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2 --run-id=grpo__psiformer__Li2 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer Li2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=Li2 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__Li2/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__Li2",
+      "run_id": "grpo__psiformer__Li2",
+      "system": {
+        "config_name": "Li2",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 6,
+        "paper_name": "Li2"
+      },
+      "system_key": "Li2"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3 --run-id=grpo__psiformer__NH3 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer NH3 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=NH3 --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__NH3/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__NH3",
+      "run_id": "grpo__psiformer__NH3",
+      "system": {
+        "config_name": "NH3",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 10,
+        "paper_name": "NH3"
+      },
+      "system_key": "NH3"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO --run-id=grpo__psiformer__CO --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer CO --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=CO --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CO/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__CO",
+      "run_id": "grpo__psiformer__CO",
+      "system": {
+        "config_name": "CO",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 14,
+        "paper_name": "CO"
+      },
+      "system_key": "CO"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2 --run-id=grpo__psiformer__CH3NH2 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer CH3NH2 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=methylamine --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__CH3NH2/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__CH3NH2",
+      "run_id": "grpo__psiformer__CH3NH2",
+      "system": {
+        "config_name": "methylamine",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 16,
+        "paper_name": "CH3NH2"
+      },
+      "system_key": "CH3NH2"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O --run-id=grpo__psiformer__C2H6O --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer C2H6O --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=ethanol --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C2H6O/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__C2H6O",
+      "run_id": "grpo__psiformer__C2H6O",
+      "system": {
+        "config_name": "ethanol",
+        "config_path": "lapnet/configs/ferminet_system_configs.py",
+        "electrons": 26,
+        "paper_name": "C2H6O"
+      },
+      "system_key": "C2H6O"
+    },
+    {
+      "architecture": "psiformer",
+      "command": "python ${Q2VMC_RESULTS_ROOT}/q2vmc_wandb_runner.py --run-dir=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6 --run-id=grpo__psiformer__C4H6 --metadata=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6/metadata.json --stats-file=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6/train_stats.csv --launch-script=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6/run_command.sh --project=${Q2VMC_WANDB_PROJECT:-q2vmc-cluster} --mode=online --group=q2vmc-paper --poll-seconds=30.0 --tags paper grpo psiformer C4H6 --entity=${Q2VMC_WANDB_ENTITY:-}",
+      "launch_command": "cd \"${Q2VMC_LAPNET_ROOT}\" && python main.py --config=lapnet/configs/ferminet_system_configs.py --config.system.molecule_name=bicbut --config.network.name=psiformer --config.batch_size=4096 --config.optim.iterations=200000 --config.optim.optimizer=grpo --config.optim.forward_laplacian=true --config.log.stats_frequency=1 --config.log.save_frequency=10.0 --config.log.save_path=${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6 --config.mcmc.burn_in=100 --config.mcmc.steps=30 --config.mcmc.move_width=0.02 --config.pretrain.iterations=5000 --config.pretrain.basis=ccpvdz --config.debug.deterministic=true --config.use_x64=false --config.optim.lr.rate=${Q2VMC_GRPO_LR_RATE:-0.001} --config.optim.grpo.inner_steps=${Q2VMC_GRPO_INNER_STEPS:-4} --config.optim.grpo.clip_epsilon=${Q2VMC_GRPO_CLIP_EPSILON:-0.2} --config.optim.grpo.max_advantage=${Q2VMC_GRPO_MAX_ADVANTAGE:-5.0} --config.optim.grpo.inner_optimizer=${Q2VMC_GRPO_INNER_OPTIMIZER:-adam} --config.optim.grpo.max_grad_norm=${Q2VMC_GRPO_MAX_GRAD_NORM:-1.0} > \"${Q2VMC_RESULTS_ROOT}/results/grpo__psiformer__C4H6/stdout.log\" 2>&1",
+      "optimizer": "grpo",
+      "results_subdir": "results/grpo__psiformer__C4H6",
+      "run_id": "grpo__psiformer__C4H6",
       "system": {
         "config_name": "bicbut",
         "config_path": "lapnet/configs/ferminet_system_configs.py",
