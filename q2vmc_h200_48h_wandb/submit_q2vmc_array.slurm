@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 export Q2VMC_RESULTS_ROOT="${SCRIPT_DIR}"
 export Q2VMC_LAPNET_ROOT="${Q2VMC_LAPNET_ROOT:-${SLURM_SUBMIT_DIR}/external/LapNet}"
 export PYTHONUNBUFFERED=1
