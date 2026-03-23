@@ -30,7 +30,7 @@ index dafcf6a..8dd6d6a 100644
        },
        'debug': {
            'deterministic': False,  # Use a deterministic seed.
-+          'seed': None,  # Optional explicit RNG seed for reproducible sweeps.
++          'seed': -1,  # Negative means "unset"; non-negative enables explicit sweeps.
        },
        'pretrain': {
            'method': 'hf',  # Method is one of 'hf', or 'direct_init'.
@@ -170,7 +170,7 @@ index 5777aa4..af6fb17 100644
    nspins = cfg.system.electrons
  
 -  if cfg.debug.deterministic:
-+  if cfg.debug.seed is not None:
++  if int(cfg.debug.seed) >= 0:
 +    seed = int(cfg.debug.seed)
 +  elif cfg.debug.deterministic:
      seed = 23
@@ -182,7 +182,8 @@ index 5777aa4..af6fb17 100644
  
 -  params_initialization_key = get_params_initialization_key(cfg.debug.deterministic)
 +  params_initialization_key = get_params_initialization_key(
-+      cfg.debug.deterministic, cfg.debug.seed)
++      cfg.debug.deterministic,
++      cfg.debug.seed if int(cfg.debug.seed) >= 0 else None)
    params = network_init(params_initialization_key)
    params = kfac_utils.replicate_all_local_devices(params)
    # Often just need log|psi(x)|.
@@ -322,7 +323,7 @@ index 5777aa4..af6fb17 100644
    to initialize network parameters.
    '''
 -  if deterministic:
-+  if seed_override is not None:
++  if seed_override is not None and int(seed_override) >= 0:
 +    seed = int(seed_override) + 865
 +  elif deterministic:
      seed = 888
