@@ -290,6 +290,23 @@ def parse_args() -> argparse.Namespace:
         help="Benchmark directory previously created by `generate`.",
     )
 
+    plot = subparsers.add_parser(
+        "plot",
+        help="Generate overview and GRPO-diagnostic plots from finished runs.",
+    )
+    plot.add_argument(
+        "--outdir",
+        type=Path,
+        required=True,
+        help="Benchmark directory previously created by `generate`.",
+    )
+    plot.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory to write plots into. Defaults to <outdir>/plots.",
+    )
+
     return parser.parse_args()
 
 
@@ -849,6 +866,321 @@ def summarize_runs(outdir: Path) -> list[dict[str, object]]:
     return summaries
 
 
+def maybe_float(value: str) -> float | None:
+    if value in ("", None):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def load_train_stats(path: Path) -> dict[str, list[float]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows:
+        return {}
+
+    columns = rows[0].keys()
+    series: dict[str, list[float]] = {column: [] for column in columns}
+    for row in rows:
+        for column in columns:
+            value = maybe_float(row.get(column, ""))
+            if value is None:
+                value = float("nan")
+            series[column].append(value)
+    return series
+
+
+def load_plot_data(outdir: Path) -> list[dict[str, object]]:
+    manifest = load_manifest(outdir)
+    rows: list[dict[str, object]] = []
+    for run in manifest["runs"]:
+        run_dir = outdir / run["results_subdir"]
+        stats_path = run_dir / "train_stats.csv"
+        if not stats_path.exists():
+            continue
+        series = load_train_stats(stats_path)
+        if not series:
+            continue
+        rows.append(
+            {
+                "run_id": run["run_id"],
+                "optimizer": run["optimizer"],
+                "architecture": run["architecture"],
+                "system_key": run["system_key"],
+                "stats_path": stats_path,
+                "series": series,
+            }
+        )
+    return rows
+
+
+def _filtered_xy(
+    xs: list[float],
+    ys: list[float],
+    *,
+    max_abs_y: float | None = None,
+    positive_only: bool = False,
+) -> tuple[list[float], list[float], int]:
+    import math
+
+    keep_x: list[float] = []
+    keep_y: list[float] = []
+    dropped = 0
+    for x, y in zip(xs, ys):
+        if not math.isfinite(x) or not math.isfinite(y):
+            dropped += 1
+            continue
+        if max_abs_y is not None and abs(y) > max_abs_y:
+            dropped += 1
+            continue
+        if positive_only and y <= 0.0:
+            dropped += 1
+            continue
+        keep_x.append(x)
+        keep_y.append(y)
+    return keep_x, keep_y, dropped
+
+
+def make_plots(outdir: Path, output_dir: Path | None = None) -> list[Path]:
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as exc:
+        raise SystemExit(
+            "matplotlib is required for `plot`. Install it in the current environment "
+            "or run the plotting snippet from a plotting-capable Python."
+        ) from exc
+
+    plot_rows = load_plot_data(outdir)
+    if not plot_rows:
+        raise SystemExit(f"No non-empty train_stats.csv files found under {outdir}")
+
+    output_dir = (output_dir or (outdir / "plots")).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    systems = list(dict.fromkeys(row["system_key"] for row in plot_rows))
+    optimizer_colors = {"kfac": "#1f77b4", "grpo": "#ff7f0e"}
+    architecture_styles = {"lapnet": "-", "psiformer": "--"}
+    architecture_markers = {"lapnet": None, "psiformer": None}
+
+    plt.style.use("default")
+
+    overview_fig, overview_axes = plt.subplots(
+        3,
+        len(systems),
+        figsize=(5.2 * len(systems), 10.0),
+        squeeze=False,
+        sharex="col",
+    )
+    legend_handles = []
+    legend_labels = []
+
+    for col, system_key in enumerate(systems):
+        system_rows = [row for row in plot_rows if row["system_key"] == system_key]
+        hidden_energy_points = 0
+
+        for row in system_rows:
+            series = row["series"]
+            xs = series.get("t") or series.get("step") or []
+            optimizer = str(row["optimizer"])
+            architecture = str(row["architecture"])
+            label = f"{optimizer}/{architecture}"
+            color = optimizer_colors.get(optimizer, "#444444")
+            linestyle = architecture_styles.get(architecture, "-")
+            marker = architecture_markers.get(architecture, None)
+
+            energy_x, energy_y, dropped_energy = _filtered_xy(
+                xs, series.get("ewmean", []), max_abs_y=1.0e6
+            )
+            hidden_energy_points += dropped_energy
+            if energy_x:
+                line = overview_axes[0][col].plot(
+                    energy_x,
+                    energy_y,
+                    color=color,
+                    linestyle=linestyle,
+                    marker=marker,
+                    linewidth=1.8,
+                    alpha=0.95,
+                    label=label,
+                )[0]
+                if label not in legend_labels:
+                    legend_handles.append(line)
+                    legend_labels.append(label)
+
+            pmove_x, pmove_y, _ = _filtered_xy(xs, series.get("pmove", []))
+            if pmove_x:
+                overview_axes[1][col].plot(
+                    pmove_x,
+                    pmove_y,
+                    color=color,
+                    linestyle=linestyle,
+                    linewidth=1.5,
+                    alpha=0.95,
+                )
+
+            var_x, var_y, _ = _filtered_xy(
+                xs, series.get("var", []), positive_only=True, max_abs_y=1.0e12
+            )
+            if var_x:
+                overview_axes[2][col].plot(
+                    var_x,
+                    var_y,
+                    color=color,
+                    linestyle=linestyle,
+                    linewidth=1.5,
+                    alpha=0.95,
+                )
+
+        overview_axes[0][col].set_title(system_key)
+        overview_axes[0][col].set_ylabel("EWMA Energy")
+        overview_axes[1][col].set_ylabel("pmove")
+        overview_axes[1][col].set_ylim(0.0, 1.0)
+        overview_axes[2][col].set_ylabel("Batch Var")
+        overview_axes[2][col].set_yscale("log")
+        overview_axes[2][col].set_xlabel("Iteration")
+        if hidden_energy_points:
+            overview_axes[0][col].text(
+                0.02,
+                0.02,
+                f"{hidden_energy_points} extreme energy points hidden",
+                transform=overview_axes[0][col].transAxes,
+                fontsize=8,
+                color="#666666",
+                ha="left",
+                va="bottom",
+            )
+
+    for ax_row in overview_axes:
+        for ax in ax_row:
+            ax.grid(True, alpha=0.25)
+
+    overview_fig.suptitle("Q2VMC Benchmark Overview", fontsize=14)
+    if legend_handles:
+        overview_fig.legend(
+            legend_handles,
+            legend_labels,
+            loc="upper center",
+            ncol=min(4, len(legend_handles)),
+            frameon=False,
+            bbox_to_anchor=(0.5, 0.98),
+        )
+    overview_fig.tight_layout(rect=(0, 0, 1, 0.94))
+    overview_path = output_dir / "q2vmc_overview.png"
+    overview_fig.savefig(overview_path, dpi=180)
+    plt.close(overview_fig)
+
+    grpo_rows = [row for row in plot_rows if row["optimizer"] == "grpo"]
+    output_paths = [overview_path]
+    if grpo_rows:
+        diag_fig, diag_axes = plt.subplots(
+            4,
+            len(systems),
+            figsize=(5.2 * len(systems), 12.5),
+            squeeze=False,
+            sharex="col",
+        )
+        diag_handles = []
+        diag_labels = []
+        arch_colors = {"lapnet": "#2ca02c", "psiformer": "#d62728"}
+
+        for col, system_key in enumerate(systems):
+            system_rows = [
+                row
+                for row in grpo_rows
+                if row["system_key"] == system_key
+                and "grpo_objective" in row["series"]
+            ]
+            for row in system_rows:
+                series = row["series"]
+                xs = series.get("t") or series.get("step") or []
+                architecture = str(row["architecture"])
+                color = arch_colors.get(architecture, "#444444")
+                line = diag_axes[0][col].plot(
+                    xs,
+                    series.get("grpo_objective", []),
+                    color=color,
+                    linewidth=1.7,
+                    label=architecture,
+                )[0]
+                if architecture not in diag_labels:
+                    diag_handles.append(line)
+                    diag_labels.append(architecture)
+
+                diag_axes[1][col].plot(
+                    xs,
+                    series.get("grpo_advantage_std", []),
+                    color=color,
+                    linewidth=1.5,
+                )
+                diag_axes[2][col].plot(
+                    xs,
+                    series.get("grpo_clip_mean", []),
+                    color=color,
+                    linewidth=1.5,
+                )
+                diag_axes[2][col].plot(
+                    xs,
+                    series.get("grpo_clip_max", []),
+                    color=color,
+                    linewidth=1.2,
+                    alpha=0.45,
+                )
+                kl_x, kl_mean, _ = _filtered_xy(
+                    xs, series.get("grpo_kl_mean", []), positive_only=True
+                )
+                kl_x2, kl_max, _ = _filtered_xy(
+                    xs, series.get("grpo_kl_max", []), positive_only=True
+                )
+                if kl_x:
+                    diag_axes[3][col].plot(
+                        kl_x,
+                        kl_mean,
+                        color=color,
+                        linewidth=1.5,
+                    )
+                if kl_x2:
+                    diag_axes[3][col].plot(
+                        kl_x2,
+                        kl_max,
+                        color=color,
+                        linewidth=1.2,
+                        alpha=0.45,
+                    )
+
+            diag_axes[0][col].set_title(system_key)
+            diag_axes[0][col].set_ylabel("GRPO Objective")
+            diag_axes[1][col].set_ylabel("Advantage Std")
+            diag_axes[2][col].set_ylabel("Clip Mean / Max")
+            diag_axes[2][col].set_ylim(0.0, 1.05)
+            diag_axes[3][col].set_ylabel("KL Mean / Max")
+            diag_axes[3][col].set_xlabel("Iteration")
+            diag_axes[3][col].set_yscale("log")
+
+        for ax_row in diag_axes:
+            for ax in ax_row:
+                ax.grid(True, alpha=0.25)
+
+        diag_fig.suptitle("GRPO Diagnostics", fontsize=14)
+        if diag_handles:
+            diag_fig.legend(
+                diag_handles,
+                diag_labels,
+                loc="upper center",
+                ncol=min(2, len(diag_handles)),
+                frameon=False,
+                bbox_to_anchor=(0.5, 0.98),
+            )
+        diag_fig.tight_layout(rect=(0, 0, 1, 0.95))
+        diag_path = output_dir / "q2vmc_grpo_diagnostics.png"
+        diag_fig.savefig(diag_path, dpi=180)
+        plt.close(diag_fig)
+        output_paths.append(diag_path)
+
+    return output_paths
+
+
 def write_summary(outdir: Path, rows: list[dict[str, object]]) -> None:
     path = outdir / "summary.csv"
     fieldnames = [
@@ -935,12 +1267,23 @@ def handle_summarize(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_plot(args: argparse.Namespace) -> int:
+    outdir = args.outdir.resolve()
+    output_paths = make_plots(outdir, args.output_dir)
+    print("Wrote plots:")
+    for path in output_paths:
+        print(path)
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if args.command == "generate":
         return handle_generate(args)
     if args.command == "summarize":
         return handle_summarize(args)
+    if args.command == "plot":
+        return handle_plot(args)
     raise ValueError(f"Unsupported command: {args.command}")
 
 
