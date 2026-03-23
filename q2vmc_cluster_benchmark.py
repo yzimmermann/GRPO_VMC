@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import shlex
 import sys
 import textwrap
@@ -910,10 +911,42 @@ def load_plot_data(outdir: Path) -> list[dict[str, object]]:
                 "architecture": run["architecture"],
                 "system_key": run["system_key"],
                 "stats_path": stats_path,
+                "stdout_path": run_dir / "stdout.log",
                 "series": series,
             }
         )
     return rows
+
+
+def load_grpo_stdout_diagnostics(path: Path) -> dict[str, list[float]]:
+    if not path.exists():
+        return {}
+
+    pattern = re.compile(
+        r"Step\s+(?P<t>\d+):.*?grpo_obj=(?P<objective>[-+0-9.eE]+),\s+"
+        r"clip_mean=(?P<clip_mean>[-+0-9.eE]+),\s+"
+        r"clip_max=(?P<clip_max>[-+0-9.eE]+)"
+    )
+    series = {
+        "t": [],
+        "grpo_objective": [],
+        "grpo_clip_mean": [],
+        "grpo_clip_max": [],
+    }
+
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            match = pattern.search(line)
+            if not match:
+                continue
+            series["t"].append(float(match.group("t")))
+            series["grpo_objective"].append(float(match.group("objective")))
+            series["grpo_clip_mean"].append(float(match.group("clip_mean")))
+            series["grpo_clip_max"].append(float(match.group("clip_max")))
+
+    if not series["t"]:
+        return {}
+    return series
 
 
 def _filtered_xy(
@@ -1090,10 +1123,18 @@ def make_plots(outdir: Path, output_dir: Path | None = None) -> list[Path]:
                 row
                 for row in grpo_rows
                 if row["system_key"] == system_key
-                and "grpo_objective" in row["series"]
             ]
+            found_any = False
             for row in system_rows:
-                series = row["series"]
+                series = dict(row["series"])
+                if "grpo_objective" not in series:
+                    stdout_series = load_grpo_stdout_diagnostics(Path(row["stdout_path"]))
+                    if stdout_series:
+                        series.update(stdout_series)
+                if "grpo_objective" not in series:
+                    continue
+
+                found_any = True
                 xs = series.get("t") or series.get("step") or []
                 architecture = str(row["architecture"])
                 color = arch_colors.get(architecture, "#444444")
@@ -1108,25 +1149,29 @@ def make_plots(outdir: Path, output_dir: Path | None = None) -> list[Path]:
                     diag_handles.append(line)
                     diag_labels.append(architecture)
 
-                diag_axes[1][col].plot(
-                    xs,
-                    series.get("grpo_advantage_std", []),
-                    color=color,
-                    linewidth=1.5,
-                )
-                diag_axes[2][col].plot(
-                    xs,
-                    series.get("grpo_clip_mean", []),
-                    color=color,
-                    linewidth=1.5,
-                )
-                diag_axes[2][col].plot(
-                    xs,
-                    series.get("grpo_clip_max", []),
-                    color=color,
-                    linewidth=1.2,
-                    alpha=0.45,
-                )
+                if "grpo_advantage_std" in series:
+                    diag_axes[1][col].plot(
+                        xs,
+                        series.get("grpo_advantage_std", []),
+                        color=color,
+                        linewidth=1.5,
+                    )
+
+                if "grpo_clip_mean" in series:
+                    diag_axes[2][col].plot(
+                        xs,
+                        series.get("grpo_clip_mean", []),
+                        color=color,
+                        linewidth=1.5,
+                    )
+                if "grpo_clip_max" in series:
+                    diag_axes[2][col].plot(
+                        xs,
+                        series.get("grpo_clip_max", []),
+                        color=color,
+                        linewidth=1.2,
+                        alpha=0.45,
+                    )
                 kl_x, kl_mean, _ = _filtered_xy(
                     xs, series.get("grpo_kl_mean", []), positive_only=True
                 )
@@ -1148,6 +1193,18 @@ def make_plots(outdir: Path, output_dir: Path | None = None) -> list[Path]:
                         linewidth=1.2,
                         alpha=0.45,
                     )
+
+            if not found_any:
+                diag_axes[0][col].text(
+                    0.5,
+                    0.5,
+                    "No GRPO diagnostics\nfound in CSV/stdout",
+                    transform=diag_axes[0][col].transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                    color="#666666",
+                )
 
             diag_axes[0][col].set_title(system_key)
             diag_axes[0][col].set_ylabel("GRPO Objective")
