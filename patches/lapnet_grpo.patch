@@ -1,5 +1,5 @@
 diff --git a/lapnet/base_config.py b/lapnet/base_config.py
-index dafcf6a..8dd6d6a 100644
+index dafcf6a..33b7b17 100644
 --- a/lapnet/base_config.py
 +++ b/lapnet/base_config.py
 @@ -60,7 +60,7 @@ def default() -> ml_collections.ConfigDict:
@@ -35,7 +35,7 @@ index dafcf6a..8dd6d6a 100644
        'pretrain': {
            'method': 'hf',  # Method is one of 'hf', or 'direct_init'.
 diff --git a/lapnet/train.py b/lapnet/train.py
-index 5777aa4..af6fb17 100644
+index 5777aa4..c73b285 100644
 --- a/lapnet/train.py
 +++ b/lapnet/train.py
 @@ -131,7 +131,17 @@ class OptUpdate(Protocol):
@@ -176,7 +176,7 @@ index 5777aa4..af6fb17 100644
      seed = 23
    else:
      seed = 1e6 * time.time()
-@@ -321,7 +423,8 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -321,7 +423,9 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
     network_options, network_each_det) = networks.network_provider(cfg)(
        atoms, nspins, charges, hf_solution=hf_solution,)
  
@@ -187,7 +187,7 @@ index 5777aa4..af6fb17 100644
    params = network_init(params_initialization_key)
    params = kfac_utils.replicate_all_local_devices(params)
    # Often just need log|psi(x)|.
-@@ -373,6 +476,19 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -373,6 +477,19 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
  
    # Set up logging
    train_schema = ['step', 'energy', 'var', 'ewmean', 'ewvar', 'pmove', 'num_outliers', 'num_det']
@@ -207,7 +207,7 @@ index 5777aa4..af6fb17 100644
  
    # Initialization done. We now want to have different PRNG streams on each
    # device. Shard the key over devices
-@@ -478,6 +594,26 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -478,6 +595,26 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
          optax.scale_by_trust_ratio(),
          optax.scale_by_schedule(learning_rate_schedule),
          optax.scale(-1))
@@ -234,7 +234,7 @@ index 5777aa4..af6fb17 100644
      elif cfg.optim.optimizer == 'kfac':
        optimizer = kfac_jax.Optimizer(
          val_and_grad,
-@@ -533,6 +669,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -533,6 +670,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
          return params, opt_state, loss, aux_data
  
        step = make_training_step(mcmc_step=mcmc_step, optimizer_step=opt_update)
@@ -253,7 +253,7 @@ index 5777aa4..af6fb17 100644
      elif isinstance(optimizer, kfac_jax.Optimizer):
        step = make_kfac_training_step(
            mcmc_step=mcmc_step,
-@@ -624,7 +772,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -624,7 +773,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
            )
  
        sharded_key, subkeys = kfac_jax.utils.p_split(sharded_key)
@@ -262,7 +262,7 @@ index 5777aa4..af6fb17 100644
            data=data,
            params=params,
            state=opt_state,
-@@ -657,11 +805,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -657,11 +806,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
        # Logging
        if t % cfg.log.stats_frequency == 0:
  
@@ -275,7 +275,7 @@ index 5777aa4..af6fb17 100644
              step=t,
              energy=np.asarray(loss),
              var=np.asarray(batch_var),
-@@ -671,6 +815,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -671,6 +816,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
              num_outliers=np.asarray(num_outliers),
              num_det=np.asarray(num_det))
  
@@ -312,7 +312,7 @@ index 5777aa4..af6fb17 100644
        # Checkpointing
        if should_save_ckpt(t, time_of_last_ckpt):
            # no checkpointing in inference mode
-@@ -714,12 +888,14 @@ def find_el_partition_num(cfg, start, n):
+@@ -714,12 +889,14 @@ def find_el_partition_num(cfg, start, n):
      return 0
  
  
