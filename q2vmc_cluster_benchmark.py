@@ -1034,6 +1034,10 @@ python -m pip install -U \\
 
 python -m pip install -U wandb
 
+# Clean stale build artifacts from previous failed installs.
+rm -rf "$LAPJAX_ROOT/build" "$LAPJAX_ROOT/dist"
+find "$LAPJAX_ROOT" -maxdepth 1 -name '*.egg-info' -exec rm -rf {{}} +
+
 python -m pip install --no-build-isolation "$LAPJAX_ROOT"
 python -m pip install --no-build-isolation --no-deps -e "$LAPNET_ROOT"
 
