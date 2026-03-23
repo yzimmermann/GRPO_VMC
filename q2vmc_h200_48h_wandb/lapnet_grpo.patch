@@ -282,3 +282,23 @@ index 5777aa4..bc054ea 100644
        # Checkpointing
        if should_save_ckpt(t, time_of_last_ckpt):
            # no checkpointing in inference mode
+diff --git a/lapnet/utils/writers.py b/lapnet/utils/writers.py
+index 9939130..45cbc15 100644
+--- a/lapnet/utils/writers.py
++++ b/lapnet/utils/writers.py
+@@ -61,6 +61,7 @@ class Writer(contextlib.AbstractContextManager):
+       if self._iteration_key:
+         self._file.write(f'{self._iteration_key},')
+       self._file.write(','.join(self._schema) + '\n')
++      self._file.flush()
+     return self
+ 
+   def write(self, t: int, **data):
+@@ -77,6 +78,7 @@ class Writer(contextlib.AbstractContextManager):
+ 
+     # write the data to csv
+     self._file.write(','.join(row) + '\n')
++    self._file.flush()
+ 
+     # write the data to abseil logs
+     if self._log:
