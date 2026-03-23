@@ -21,7 +21,8 @@ import re
 import shlex
 import sys
 import textwrap
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
+from itertools import product
 from pathlib import Path
 from typing import Iterable
 
@@ -60,6 +61,16 @@ class BenchmarkPreset:
 
 
 @dataclass(frozen=True)
+class GRPOConfig:
+    inner_steps: int
+    clip_epsilon: float
+    max_advantage: float
+    inner_optimizer: str
+    max_grad_norm: float
+    lr_rate: float
+
+
+@dataclass(frozen=True)
 class RunSpec:
     run_id: str
     optimizer: str
@@ -67,6 +78,8 @@ class RunSpec:
     system_key: str
     system: SystemSpec
     preset: BenchmarkPreset
+    seed: int | None = None
+    grpo: GRPOConfig | None = None
 
     @property
     def results_subdir(self) -> str:
@@ -125,6 +138,19 @@ PRESETS = {
         deterministic=True,
         use_x64=False,
         save_frequency_minutes=5.0,
+        burn_in=50,
+        mcmc_steps=20,
+    ),
+    "tune": BenchmarkPreset(
+        name="tune",
+        batch_size=1024,
+        iterations=5_000,
+        pretrain_iterations=500,
+        optimizer="kfac",
+        forward_laplacian=True,
+        deterministic=True,
+        use_x64=False,
+        save_frequency_minutes=3.0,
         burn_in=50,
         mcmc_steps=20,
     ),
@@ -291,6 +317,162 @@ def parse_args() -> argparse.Namespace:
         help="Benchmark directory previously created by `generate`.",
     )
 
+    sweep = subparsers.add_parser(
+        "generate-grpo-sweep",
+        help="Materialize a focused GRPO hyperparameter sweep with KFAC baselines.",
+    )
+    sweep.add_argument(
+        "--outdir",
+        type=Path,
+        required=True,
+        help="Directory to populate with the benchmark pack.",
+    )
+    sweep.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        default="tune",
+        help="Training budget preset for the sweep.",
+    )
+    sweep.add_argument(
+        "--architectures",
+        nargs="+",
+        default=["lapnet"],
+        choices=sorted(DEFAULT_ARCHITECTURES),
+        help="Architectures to include in the sweep.",
+    )
+    sweep.add_argument(
+        "--systems",
+        nargs="+",
+        default=["Li2"],
+        choices=sorted(DEFAULT_SYSTEMS),
+        help="Systems to include in the sweep.",
+    )
+    sweep.add_argument(
+        "--seeds",
+        nargs="+",
+        type=int,
+        default=[0],
+        help="Explicit debug seeds for the sweep runs.",
+    )
+    sweep.add_argument(
+        "--grpo-inner-steps-grid",
+        nargs="+",
+        type=int,
+        default=[1, 2],
+        help="GRPO inner-step values to sweep.",
+    )
+    sweep.add_argument(
+        "--grpo-lr-grid",
+        nargs="+",
+        type=float,
+        default=[1e-4, 3e-4, 1e-3],
+        help="GRPO learning rates to sweep.",
+    )
+    sweep.add_argument(
+        "--grpo-clip-grid",
+        nargs="+",
+        type=float,
+        default=[0.1, 0.2],
+        help="GRPO clipping epsilons to sweep.",
+    )
+    sweep.add_argument(
+        "--grpo-max-advantage-grid",
+        nargs="+",
+        type=float,
+        default=[2.0],
+        help="GRPO max-advantage caps to sweep.",
+    )
+    sweep.add_argument(
+        "--grpo-max-grad-norm-grid",
+        nargs="+",
+        type=float,
+        default=[0.5],
+        help="GRPO gradient-clipping thresholds to sweep.",
+    )
+    sweep.add_argument(
+        "--grpo-inner-optimizer",
+        choices=("adam", "lamb", "sgd"),
+        default="adam",
+        help="GRPO inner optimizer to use across the sweep.",
+    )
+    sweep.add_argument(
+        "--no-kfac-baseline",
+        action="store_true",
+        help="Skip the KFAC baseline runs and generate only GRPO sweeps.",
+    )
+    sweep.add_argument(
+        "--batch-size",
+        type=int,
+        default=None,
+        help="Optional batch-size override for the chosen preset.",
+    )
+    sweep.add_argument(
+        "--iterations",
+        type=int,
+        default=None,
+        help="Optional iteration override for the chosen preset.",
+    )
+    sweep.add_argument(
+        "--pretrain-iterations",
+        type=int,
+        default=None,
+        help="Optional pretrain-iteration override for the chosen preset.",
+    )
+    sweep.add_argument("--job-name", default="q2vmc", help="Slurm job name.")
+    sweep.add_argument(
+        "--gpus-per-job", type=int, default=1, help="GPUs requested per Slurm task."
+    )
+    sweep.add_argument(
+        "--cpus-per-task", type=int, default=16, help="CPUs requested per Slurm task."
+    )
+    sweep.add_argument(
+        "--mem",
+        default="128G",
+        help="Memory requested per Slurm task, or 0 for all node memory.",
+    )
+    sweep.add_argument(
+        "--time", default="12:00:00", help="Wall-clock limit for each Slurm task."
+    )
+    sweep.add_argument(
+        "--array-parallelism",
+        type=int,
+        default=4,
+        help="Max number of array tasks allowed to run concurrently.",
+    )
+    sweep.add_argument("--partition", default="", help="Optional Slurm partition.")
+    sweep.add_argument("--account", default="", help="Optional Slurm account.")
+    sweep.add_argument("--qos", default="", help="Optional Slurm QoS.")
+    sweep.add_argument(
+        "--constraint", default="", help="Optional Slurm constraint."
+    )
+    sweep.add_argument(
+        "--wandb-project",
+        default=DEFAULT_WANDB_PROJECT,
+        help="Weights & Biases project name.",
+    )
+    sweep.add_argument(
+        "--wandb-entity",
+        default="",
+        help="Optional Weights & Biases entity/team name.",
+    )
+    sweep.add_argument(
+        "--wandb-group",
+        default="grpo-tune",
+        help="Weights & Biases group name for the sweep.",
+    )
+    sweep.add_argument(
+        "--wandb-mode",
+        choices=("online", "offline", "disabled"),
+        default="online",
+        help="Weights & Biases logging mode.",
+    )
+    sweep.add_argument(
+        "--wandb-poll-seconds",
+        type=float,
+        default=30.0,
+        help="How often to ingest new LapNet CSV rows into W&B.",
+    )
+
     plot = subparsers.add_parser(
         "plot",
         help="Generate overview and GRPO-diagnostic plots from finished runs.",
@@ -343,6 +525,122 @@ def build_runs(
     return runs
 
 
+def slugify_float(value: float) -> str:
+    text = f"{value:g}"
+    text = text.replace("-", "m").replace("+", "")
+    text = text.replace(".", "p")
+    return text
+
+
+def sweep_run_id(
+    optimizer: str,
+    architecture: str,
+    system_key: str,
+    *,
+    seed: int | None = None,
+    grpo: GRPOConfig | None = None,
+) -> str:
+    parts = [optimizer, architecture, system_key]
+    if grpo is not None:
+        parts.extend(
+            [
+                f"is{grpo.inner_steps}",
+                f"lr{slugify_float(grpo.lr_rate)}",
+                f"clip{slugify_float(grpo.clip_epsilon)}",
+                f"adv{slugify_float(grpo.max_advantage)}",
+                f"gn{slugify_float(grpo.max_grad_norm)}",
+                grpo.inner_optimizer,
+            ]
+        )
+    if seed is not None:
+        parts.append(f"seed{seed}")
+    return "__".join(parts)
+
+
+def override_preset_from_args(
+    preset: BenchmarkPreset,
+    *,
+    batch_size: int | None = None,
+    iterations: int | None = None,
+    pretrain_iterations: int | None = None,
+) -> BenchmarkPreset:
+    updates = {}
+    if batch_size is not None:
+        updates["batch_size"] = batch_size
+    if iterations is not None:
+        updates["iterations"] = iterations
+    if pretrain_iterations is not None:
+        updates["pretrain_iterations"] = pretrain_iterations
+    return replace(preset, **updates) if updates else preset
+
+
+def build_grpo_sweep_runs(
+    args: argparse.Namespace,
+    preset: BenchmarkPreset,
+) -> list[RunSpec]:
+    runs: list[RunSpec] = []
+    preset = override_preset_from_args(
+        preset,
+        batch_size=args.batch_size,
+        iterations=args.iterations,
+        pretrain_iterations=args.pretrain_iterations,
+    )
+
+    for architecture in args.architectures:
+        for system_key in args.systems:
+            system = SYSTEMS[system_key]
+            for seed in args.seeds:
+                if not args.no_kfac_baseline:
+                    runs.append(
+                        RunSpec(
+                            run_id=sweep_run_id(
+                                "kfac", architecture, system_key, seed=seed
+                            ),
+                            optimizer="kfac",
+                            architecture=architecture,
+                            system_key=system_key,
+                            system=system,
+                            preset=preset,
+                            seed=seed,
+                        )
+                    )
+
+                for inner_steps, lr_rate, clip_epsilon, max_advantage, max_grad_norm in product(
+                    args.grpo_inner_steps_grid,
+                    args.grpo_lr_grid,
+                    args.grpo_clip_grid,
+                    args.grpo_max_advantage_grid,
+                    args.grpo_max_grad_norm_grid,
+                ):
+                    grpo = GRPOConfig(
+                        inner_steps=inner_steps,
+                        clip_epsilon=clip_epsilon,
+                        max_advantage=max_advantage,
+                        inner_optimizer=args.grpo_inner_optimizer,
+                        max_grad_norm=max_grad_norm,
+                        lr_rate=lr_rate,
+                    )
+                    runs.append(
+                        RunSpec(
+                            run_id=sweep_run_id(
+                                "grpo",
+                                architecture,
+                                system_key,
+                                seed=seed,
+                                grpo=grpo,
+                            ),
+                            optimizer="grpo",
+                            architecture=architecture,
+                            system_key=system_key,
+                            system=system,
+                            preset=preset,
+                            seed=seed,
+                            grpo=grpo,
+                        )
+                    )
+    return runs
+
+
 def build_lapnet_command(run: RunSpec) -> str:
     flags = [
         "python",
@@ -365,22 +663,56 @@ def build_lapnet_command(run: RunSpec) -> str:
         f"--config.debug.deterministic={bool_flag(run.preset.deterministic)}",
         f"--config.use_x64={bool_flag(run.preset.use_x64)}",
     ]
+    if run.seed is not None:
+        flags.append(f"--config.debug.seed={run.seed}")
     if run.optimizer == "grpo":
-        flags.extend(
-            [
-                f"--config.optim.lr.rate=${{Q2VMC_GRPO_LR_RATE:-0.001}}",
-                f"--config.optim.grpo.inner_steps=${{Q2VMC_GRPO_INNER_STEPS:-4}}",
-                f"--config.optim.grpo.clip_epsilon=${{Q2VMC_GRPO_CLIP_EPSILON:-0.2}}",
-                f"--config.optim.grpo.max_advantage=${{Q2VMC_GRPO_MAX_ADVANTAGE:-5.0}}",
-                f"--config.optim.grpo.inner_optimizer=${{Q2VMC_GRPO_INNER_OPTIMIZER:-adam}}",
-                f"--config.optim.grpo.max_grad_norm=${{Q2VMC_GRPO_MAX_GRAD_NORM:-1.0}}",
-            ]
-        )
+        if run.grpo is not None:
+            flags.extend(
+                [
+                    f"--config.optim.lr.rate={run.grpo.lr_rate}",
+                    f"--config.optim.grpo.inner_steps={run.grpo.inner_steps}",
+                    f"--config.optim.grpo.clip_epsilon={run.grpo.clip_epsilon}",
+                    f"--config.optim.grpo.max_advantage={run.grpo.max_advantage}",
+                    f"--config.optim.grpo.inner_optimizer={run.grpo.inner_optimizer}",
+                    f"--config.optim.grpo.max_grad_norm={run.grpo.max_grad_norm}",
+                ]
+            )
+        else:
+            flags.extend(
+                [
+                    f"--config.optim.lr.rate=${{Q2VMC_GRPO_LR_RATE:-0.001}}",
+                    f"--config.optim.grpo.inner_steps=${{Q2VMC_GRPO_INNER_STEPS:-4}}",
+                    f"--config.optim.grpo.clip_epsilon=${{Q2VMC_GRPO_CLIP_EPSILON:-0.2}}",
+                    f"--config.optim.grpo.max_advantage=${{Q2VMC_GRPO_MAX_ADVANTAGE:-5.0}}",
+                    f"--config.optim.grpo.inner_optimizer=${{Q2VMC_GRPO_INNER_OPTIMIZER:-adam}}",
+                    f"--config.optim.grpo.max_grad_norm=${{Q2VMC_GRPO_MAX_GRAD_NORM:-1.0}}",
+                ]
+            )
     return (
         'cd "${Q2VMC_LAPNET_ROOT}" && '
         + " ".join(flags)
         + f' > "${{Q2VMC_RESULTS_ROOT}}/{run.results_subdir}/stdout.log" 2>&1'
     )
+
+
+def launcher_grpo_defaults(args: argparse.Namespace) -> dict[str, object]:
+    if hasattr(args, "grpo_inner_steps"):
+        return {
+            "inner_steps": args.grpo_inner_steps,
+            "clip_epsilon": args.grpo_clip_epsilon,
+            "max_advantage": args.grpo_max_advantage,
+            "inner_optimizer": args.grpo_inner_optimizer,
+            "max_grad_norm": args.grpo_max_grad_norm,
+            "lr_rate": args.grpo_lr_rate,
+        }
+    return {
+        "inner_steps": args.grpo_inner_steps_grid[0],
+        "clip_epsilon": args.grpo_clip_grid[0],
+        "max_advantage": args.grpo_max_advantage_grid[0],
+        "inner_optimizer": args.grpo_inner_optimizer,
+        "max_grad_norm": args.grpo_max_grad_norm_grid[0],
+        "lr_rate": args.grpo_lr_grid[0],
+    }
 
 
 def build_run_command(run: RunSpec, args: argparse.Namespace) -> str:
@@ -422,6 +754,7 @@ def write_text(path: Path, content: str) -> None:
 def write_manifest(
     outdir: Path, runs: list[RunSpec], preset: BenchmarkPreset, args: argparse.Namespace
 ) -> None:
+    grpo_defaults = launcher_grpo_defaults(args)
     manifest = {
         "benchmark": "Q2VMC Psiformer/LapNet public baseline harness",
         "preset": asdict(preset),
@@ -429,20 +762,13 @@ def write_manifest(
             "gpus_per_job": args.gpus_per_job,
             "array_parallelism": args.array_parallelism,
             "time": args.time,
-            "optimizers": list(args.optimizers),
+            "optimizers": sorted({run.optimizer for run in runs}),
             "wandb_project": args.wandb_project,
             "wandb_entity": args.wandb_entity,
             "wandb_group": args.wandb_group or f"q2vmc-{preset.name}",
             "wandb_mode": args.wandb_mode,
             "wandb_poll_seconds": args.wandb_poll_seconds,
-            "grpo": {
-                "inner_steps": args.grpo_inner_steps,
-                "clip_epsilon": args.grpo_clip_epsilon,
-                "max_advantage": args.grpo_max_advantage,
-                "inner_optimizer": args.grpo_inner_optimizer,
-                "max_grad_norm": args.grpo_max_grad_norm,
-                "lr_rate": args.grpo_lr_rate,
-            },
+            "grpo": grpo_defaults,
         },
         "upstream": {name: asdict(repo) for name, repo in UPSTREAM.items()},
         "runs": [
@@ -451,6 +777,8 @@ def write_manifest(
                 "optimizer": run.optimizer,
                 "architecture": run.architecture,
                 "system_key": run.system_key,
+                "seed": run.seed,
+                "grpo": asdict(run.grpo) if run.grpo is not None else None,
                 "system": asdict(run.system),
                 "results_subdir": run.results_subdir,
                 "launch_command": build_lapnet_command(run),
@@ -482,6 +810,7 @@ def write_metadata_csv(outdir: Path, runs: list[RunSpec]) -> None:
                 "optimizer",
                 "architecture",
                 "system_key",
+                "seed",
                 "paper_name",
                 "config_name",
                 "electrons",
@@ -496,6 +825,7 @@ def write_metadata_csv(outdir: Path, runs: list[RunSpec]) -> None:
                     "optimizer": run.optimizer,
                     "architecture": run.architecture,
                     "system_key": run.system_key,
+                    "seed": run.seed if run.seed is not None else "",
                     "paper_name": run.system.paper_name,
                     "config_name": run.system.config_name,
                     "electrons": run.system.electrons,
@@ -515,18 +845,23 @@ def write_run_scaffolding(
             "optimizer": run.optimizer,
             "architecture": run.architecture,
             "system_key": run.system_key,
+            "seed": run.seed,
             "system": asdict(run.system),
             "preset": asdict(run.preset),
             "launch_command": build_lapnet_command(run),
             "command": build_run_command(run, args),
-            "grpo": {
-                "inner_steps": args.grpo_inner_steps,
-                "clip_epsilon": args.grpo_clip_epsilon,
-                "max_advantage": args.grpo_max_advantage,
-                "inner_optimizer": args.grpo_inner_optimizer,
-                "max_grad_norm": args.grpo_max_grad_norm,
-                "lr_rate": args.grpo_lr_rate,
-            },
+            "grpo": (
+                asdict(run.grpo)
+                if run.grpo is not None
+                else {
+                    "inner_steps": getattr(args, "grpo_inner_steps", None),
+                    "clip_epsilon": getattr(args, "grpo_clip_epsilon", None),
+                    "max_advantage": getattr(args, "grpo_max_advantage", None),
+                    "inner_optimizer": getattr(args, "grpo_inner_optimizer", None),
+                    "max_grad_norm": getattr(args, "grpo_max_grad_norm", None),
+                    "lr_rate": getattr(args, "grpo_lr_rate", None),
+                }
+            ),
             "wandb": {
                 "project": args.wandb_project,
                 "entity": args.wandb_entity,
@@ -551,6 +886,7 @@ def write_run_scaffolding(
 def write_slurm_script(
     outdir: Path, job_name: str, num_runs: int, args: argparse.Namespace
 ) -> None:
+    grpo_defaults = launcher_grpo_defaults(args)
     if args.array_parallelism and args.array_parallelism > 0:
         array_spec = f"1-{num_runs}%{args.array_parallelism}"
     else:
@@ -622,12 +958,12 @@ def write_slurm_script(
         % (
             args.wandb_project,
             args.wandb_entity,
-            args.grpo_inner_steps,
-            args.grpo_clip_epsilon,
-            args.grpo_max_advantage,
-            args.grpo_inner_optimizer,
-            args.grpo_max_grad_norm,
-            args.grpo_lr_rate,
+            grpo_defaults["inner_steps"],
+            grpo_defaults["clip_epsilon"],
+            grpo_defaults["max_advantage"],
+            grpo_defaults["inner_optimizer"],
+            grpo_defaults["max_grad_norm"],
+            grpo_defaults["lr_rate"],
         )
     )
     write_text(outdir / "submit_q2vmc_array.slurm", script)
@@ -1315,6 +1651,39 @@ def handle_generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_generate_grpo_sweep(args: argparse.Namespace) -> int:
+    base_preset = PRESETS[args.preset]
+    effective_preset = override_preset_from_args(
+        base_preset,
+        batch_size=args.batch_size,
+        iterations=args.iterations,
+        pretrain_iterations=args.pretrain_iterations,
+    )
+    outdir = args.outdir.resolve()
+    runs = build_grpo_sweep_runs(args, base_preset)
+
+    outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "results").mkdir(exist_ok=True)
+    (outdir / "slurm_logs").mkdir(exist_ok=True)
+
+    write_manifest(outdir, runs, effective_preset, args)
+    write_commands(outdir, runs, args)
+    write_metadata_csv(outdir, runs)
+    write_run_scaffolding(outdir, runs, args)
+    write_slurm_script(outdir, args.job_name, len(runs), args)
+    write_bootstrap_script(outdir)
+    write_lapnet_patch(outdir)
+    write_cluster_driver(outdir)
+    write_wandb_runner(outdir)
+    write_readme(outdir, runs, args)
+
+    print(f"Wrote GRPO sweep pack to {outdir}")
+    print(f"Runs: {len(runs)}")
+    print(f"Slurm launcher: {outdir / 'submit_q2vmc_array.slurm'}")
+    print(f"Bootstrap helper: {outdir / 'bootstrap_q2vmc_env.sh'}")
+    return 0
+
+
 def handle_summarize(args: argparse.Namespace) -> int:
     outdir = args.outdir.resolve()
     rows = summarize_runs(outdir)
@@ -1337,6 +1706,8 @@ def main() -> int:
     args = parse_args()
     if args.command == "generate":
         return handle_generate(args)
+    if args.command == "generate-grpo-sweep":
+        return handle_generate_grpo_sweep(args)
     if args.command == "summarize":
         return handle_summarize(args)
     if args.command == "plot":

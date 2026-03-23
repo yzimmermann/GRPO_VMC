@@ -1,5 +1,5 @@
 diff --git a/lapnet/base_config.py b/lapnet/base_config.py
-index dafcf6a..445308d 100644
+index dafcf6a..8dd6d6a 100644
 --- a/lapnet/base_config.py
 +++ b/lapnet/base_config.py
 @@ -60,7 +60,7 @@ def default() -> ml_collections.ConfigDict:
@@ -26,8 +26,16 @@ index dafcf6a..445308d 100644
        },
        'log': {
            'stats_frequency': 1,  # iterations between logging of stats
+@@ -202,6 +210,7 @@ def default() -> ml_collections.ConfigDict:
+       },
+       'debug': {
+           'deterministic': False,  # Use a deterministic seed.
++          'seed': None,  # Optional explicit RNG seed for reproducible sweeps.
+       },
+       'pretrain': {
+           'method': 'hf',  # Method is one of 'hf', or 'direct_init'.
 diff --git a/lapnet/train.py b/lapnet/train.py
-index 5777aa4..bc054ea 100644
+index 5777aa4..af6fb17 100644
 --- a/lapnet/train.py
 +++ b/lapnet/train.py
 @@ -131,7 +131,17 @@ class OptUpdate(Protocol):
@@ -157,7 +165,28 @@ index 5777aa4..bc054ea 100644
  
    return step
  
-@@ -373,6 +473,19 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -283,7 +383,9 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+   charges = jnp.array([atom.charge for atom in cfg.system.molecule])
+   nspins = cfg.system.electrons
+ 
+-  if cfg.debug.deterministic:
++  if cfg.debug.seed is not None:
++    seed = int(cfg.debug.seed)
++  elif cfg.debug.deterministic:
+     seed = 23
+   else:
+     seed = 1e6 * time.time()
+@@ -321,7 +423,8 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+    network_options, network_each_det) = networks.network_provider(cfg)(
+       atoms, nspins, charges, hf_solution=hf_solution,)
+ 
+-  params_initialization_key = get_params_initialization_key(cfg.debug.deterministic)
++  params_initialization_key = get_params_initialization_key(
++      cfg.debug.deterministic, cfg.debug.seed)
+   params = network_init(params_initialization_key)
+   params = kfac_utils.replicate_all_local_devices(params)
+   # Often just need log|psi(x)|.
+@@ -373,6 +476,19 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
  
    # Set up logging
    train_schema = ['step', 'energy', 'var', 'ewmean', 'ewvar', 'pmove', 'num_outliers', 'num_det']
@@ -177,7 +206,7 @@ index 5777aa4..bc054ea 100644
  
    # Initialization done. We now want to have different PRNG streams on each
    # device. Shard the key over devices
-@@ -478,6 +591,26 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -478,6 +594,26 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
          optax.scale_by_trust_ratio(),
          optax.scale_by_schedule(learning_rate_schedule),
          optax.scale(-1))
@@ -204,7 +233,7 @@ index 5777aa4..bc054ea 100644
      elif cfg.optim.optimizer == 'kfac':
        optimizer = kfac_jax.Optimizer(
          val_and_grad,
-@@ -533,6 +666,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -533,6 +669,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
          return params, opt_state, loss, aux_data
  
        step = make_training_step(mcmc_step=mcmc_step, optimizer_step=opt_update)
@@ -223,7 +252,7 @@ index 5777aa4..bc054ea 100644
      elif isinstance(optimizer, kfac_jax.Optimizer):
        step = make_kfac_training_step(
            mcmc_step=mcmc_step,
-@@ -624,7 +769,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -624,7 +772,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
            )
  
        sharded_key, subkeys = kfac_jax.utils.p_split(sharded_key)
@@ -232,7 +261,7 @@ index 5777aa4..bc054ea 100644
            data=data,
            params=params,
            state=opt_state,
-@@ -657,11 +802,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -657,11 +805,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
        # Logging
        if t % cfg.log.stats_frequency == 0:
  
@@ -245,7 +274,7 @@ index 5777aa4..bc054ea 100644
              step=t,
              energy=np.asarray(loss),
              var=np.asarray(batch_var),
-@@ -671,6 +812,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -671,6 +815,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
              num_outliers=np.asarray(num_outliers),
              num_det=np.asarray(num_det))
  
@@ -282,11 +311,28 @@ index 5777aa4..bc054ea 100644
        # Checkpointing
        if should_save_ckpt(t, time_of_last_ckpt):
            # no checkpointing in inference mode
+@@ -714,12 +888,14 @@ def find_el_partition_num(cfg, start, n):
+     return 0
+ 
+ 
+-def get_params_initialization_key(deterministic):
++def get_params_initialization_key(deterministic, seed_override=None):
+   '''
+   The key point here is to make sure different hosts uses the same RNG key
+   to initialize network parameters.
+   '''
+-  if deterministic:
++  if seed_override is not None:
++    seed = int(seed_override) + 865
++  elif deterministic:
+     seed = 888
+   else:
+ 
 diff --git a/lapnet/utils/writers.py b/lapnet/utils/writers.py
-index 9939130..45cbc15 100644
+index 9bc67bf..ae8f5c2 100644
 --- a/lapnet/utils/writers.py
 +++ b/lapnet/utils/writers.py
-@@ -61,6 +61,7 @@ class Writer(contextlib.AbstractContextManager):
+@@ -64,6 +64,7 @@ class Writer(contextlib.AbstractContextManager):
        if self._iteration_key:
          self._file.write(f'{self._iteration_key},')
        self._file.write(','.join(self._schema) + '\n')
@@ -294,7 +340,7 @@ index 9939130..45cbc15 100644
      return self
  
    def write(self, t: int, **data):
-@@ -77,6 +78,7 @@ class Writer(contextlib.AbstractContextManager):
+@@ -82,6 +83,7 @@ class Writer(contextlib.AbstractContextManager):
  
      # write the data to csv
      self._file.write(','.join(row) + '\n')
