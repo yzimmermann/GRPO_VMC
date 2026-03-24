@@ -1040,7 +1040,7 @@ python -m pip install -U wandb
 rm -rf "$LAPJAX_ROOT/build" "$LAPJAX_ROOT/dist"
 find "$LAPJAX_ROOT" -maxdepth 1 -name '*.egg-info' -exec rm -rf {{}} +
 
-python -m pip install --no-build-isolation "$LAPJAX_ROOT"
+python -m pip install --no-build-isolation --no-use-pep517 "$LAPJAX_ROOT"
 python -m pip install --no-build-isolation --no-deps -e "$LAPNET_ROOT"
 
 cat <<EOF
