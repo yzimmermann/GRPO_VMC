@@ -1058,10 +1058,11 @@ find "$LAPJAX_ROOT" -maxdepth 1 -name '*.egg-info' -exec rm -rf {{}} +
 # LapJAX's legacy setup.py creates a temporary generated package tree and then
 # deletes it in post_setup(); make that cleanup non-fatal and use setup.py
 # directly to avoid PEP517 metadata-generation issues on clusters.
-python - <<'PY'
+LAPJAX_ROOT="$LAPJAX_ROOT" python - <<'PY'
 from pathlib import Path
+import os
 
-setup_path = Path(r"$LAPJAX_ROOT") / "setup.py"
+setup_path = Path(os.environ["LAPJAX_ROOT"]) / "setup.py"
 text = setup_path.read_text(encoding="utf-8")
 old = "  shutil.rmtree('lapjax')"
 new = "  shutil.rmtree('lapjax', ignore_errors=True)"
