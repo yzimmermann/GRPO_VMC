@@ -1016,11 +1016,13 @@ else
   cat <<'EOF'
 No JAX install command was supplied.
 
-For H200s, install a CUDA-12-compatible JAX build first, for example by setting:
+This LapNet/LapJAX stack expects the older pinned JAX build used by the
+benchmark harness. For the Harvard H200 setup we used, set:
 
-  export JAX_INSTALL_CMD='pip install -U "jax[cuda12]"'
+  export JAX_INSTALL_CMD='pip install --upgrade "jax==0.3.24" "jaxlib==0.3.24+cuda11.cudnn82" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html'
 
-or by loading your site-provided JAX module before running this script.
+and load a compatible CUDA 11 module (for example `cuda/11.8.0-fasrc01`)
+before running this script.
 EOF
 fi
 
