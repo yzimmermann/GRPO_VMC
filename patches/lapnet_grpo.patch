@@ -35,7 +35,7 @@ index dafcf6a..33b7b17 100644
        'pretrain': {
            'method': 'hf',  # Method is one of 'hf', or 'direct_init'.
 diff --git a/lapnet/train.py b/lapnet/train.py
-index 5777aa4..c73b285 100644
+index 5777aa4..aa2eeb9 100644
 --- a/lapnet/train.py
 +++ b/lapnet/train.py
 @@ -131,7 +131,17 @@ class OptUpdate(Protocol):
@@ -234,10 +234,10 @@ index 5777aa4..c73b285 100644
      elif cfg.optim.optimizer == 'kfac':
        optimizer = kfac_jax.Optimizer(
          val_and_grad,
-@@ -533,6 +670,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
-         return params, opt_state, loss, aux_data
+@@ -518,6 +655,18 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+           mcmc_step=mcmc_step,
+           optimizer_step=energy_eval)
  
-       step = make_training_step(mcmc_step=mcmc_step, optimizer_step=opt_update)
 +    elif cfg.optim.optimizer == 'grpo':
 +      opt_state = jax.pmap(optimizer.init)(params)
 +      opt_state = opt_state_ckpt or opt_state  # avoid overwriting ckpted state
@@ -250,10 +250,10 @@ index 5777aa4..c73b285 100644
 +          clip_epsilon=cfg.optim.grpo.clip_epsilon,
 +          advantage_epsilon=cfg.optim.grpo.advantage_epsilon,
 +          max_advantage=cfg.optim.grpo.max_advantage)
-     elif isinstance(optimizer, kfac_jax.Optimizer):
-       step = make_kfac_training_step(
-           mcmc_step=mcmc_step,
-@@ -624,7 +773,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+     elif isinstance(optimizer, optax.GradientTransformation):
+       # optax/optax-compatible optimizer (ADAM, LAMB, ...)
+       opt_state = jax.pmap(optimizer.init)(params)
+@@ -624,12 +773,14 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
            )
  
        sharded_key, subkeys = kfac_jax.utils.p_split(sharded_key)
@@ -262,7 +262,14 @@ index 5777aa4..c73b285 100644
            data=data,
            params=params,
            state=opt_state,
-@@ -657,11 +806,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+           key=subkeys,
+           mcmc_width=mcmc_width)
++      if cfg.optim.optimizer == 'grpo' and extra_stats is None:
++        raise RuntimeError('GRPO step returned no diagnostics; refusing to continue with a misconfigured optimizer path.')
+ 
+       # due to pmean, loss, and pmove should be the same across
+       # devices.
+@@ -657,11 +808,7 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
        # Logging
        if t % cfg.log.stats_frequency == 0:
  
@@ -275,7 +282,7 @@ index 5777aa4..c73b285 100644
              step=t,
              energy=np.asarray(loss),
              var=np.asarray(batch_var),
-@@ -671,6 +816,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
+@@ -671,6 +818,36 @@ def train(cfg: ml_collections.ConfigDict, writer_manager=None):
              num_outliers=np.asarray(num_outliers),
              num_det=np.asarray(num_det))
  
@@ -312,7 +319,7 @@ index 5777aa4..c73b285 100644
        # Checkpointing
        if should_save_ckpt(t, time_of_last_ckpt):
            # no checkpointing in inference mode
-@@ -714,12 +889,14 @@ def find_el_partition_num(cfg, start, n):
+@@ -714,12 +891,14 @@ def find_el_partition_num(cfg, start, n):
      return 0
  
  
