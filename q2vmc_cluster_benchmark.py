@@ -557,6 +557,24 @@ def sweep_run_id(
     return "__".join(parts)
 
 
+def run_wandb_tags(run: RunSpec) -> list[str]:
+    tags = [run.preset.name, run.optimizer, run.architecture, run.system_key]
+    if run.seed is not None:
+        tags.append(f"seed{run.seed}")
+    if run.grpo is not None:
+        tags.extend(
+            [
+                f"K{run.grpo.inner_steps}",
+                f"lr{run.grpo.lr_rate:g}",
+                f"clip{run.grpo.clip_epsilon:g}",
+                f"adv{run.grpo.max_advantage:g}",
+                f"gn{run.grpo.max_grad_norm:g}",
+                run.grpo.inner_optimizer,
+            ]
+        )
+    return tags
+
+
 def override_preset_from_args(
     preset: BenchmarkPreset,
     *,
@@ -737,10 +755,7 @@ def build_run_command(run: RunSpec, args: argparse.Namespace) -> str:
         f"--group={group}",
         f"--poll-seconds={args.wandb_poll_seconds}",
         "--tags",
-        run.preset.name,
-        run.optimizer,
-        run.architecture,
-        run.system_key,
+        *run_wandb_tags(run),
     ]
     command.append(f"--entity={entity}")
     return " ".join(command)
@@ -867,7 +882,7 @@ def write_run_scaffolding(
                 "entity": args.wandb_entity,
                 "group": args.wandb_group or f"q2vmc-{run.preset.name}",
                 "mode": args.wandb_mode,
-                "tags": [run.preset.name, run.optimizer, run.architecture, run.system_key],
+                "tags": run_wandb_tags(run),
             },
         }
         write_text(run_dir / "metadata.json", json.dumps(metadata, indent=2, sort_keys=True))

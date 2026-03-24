@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -88,6 +89,44 @@ class CsvTailer:
         return list(csv.DictReader(io.StringIO(payload)))
 
 
+class StdoutTailer:
+    def __init__(self, path: Path):
+        self.path = path
+        self.position = 0
+        self.pattern = re.compile(
+            r"Step\s+(?P<step>\d+):.*?grpo_obj=(?P<grpo_objective>[-+0-9.eE]+),\s+"
+            r"clip_mean=(?P<grpo_clip_mean>[-+0-9.eE]+),\s+"
+            r"clip_max=(?P<grpo_clip_max>[-+0-9.eE]+)"
+        )
+
+    def read_metrics(self) -> list[tuple[int, dict[str, object]]]:
+        if not self.path.exists():
+            return []
+        size = self.path.stat().st_size
+        if size < self.position:
+            self.position = 0
+        with self.path.open("r", encoding="utf-8", errors="replace") as handle:
+            handle.seek(self.position)
+            lines = handle.readlines()
+            self.position = handle.tell()
+        if not lines:
+            return []
+        results: list[tuple[int, dict[str, object]]] = []
+        for line in lines:
+            match = self.pattern.search(line)
+            if not match:
+                continue
+            step = int(match.group("step"))
+            metrics: dict[str, object] = {
+                "iteration": step,
+                "lapnet_step": step,
+            }
+            for key in ("grpo_objective", "grpo_clip_mean", "grpo_clip_max"):
+                metrics[key] = coerce_value(match.group(key))
+            results.append((step, metrics))
+        return results
+
+
 def row_to_metrics(row: dict[str, str]) -> tuple[int, dict[str, object]]:
     metrics: dict[str, object] = {}
     iteration = 0
@@ -99,6 +138,8 @@ def row_to_metrics(row: dict[str, str]) -> tuple[int, dict[str, object]]:
             iteration = int(cast_value)
             metrics["iteration"] = iteration
         elif key == "step":
+            iteration = int(cast_value)
+            metrics["iteration"] = iteration
             metrics["lapnet_step"] = cast_value
         else:
             metrics[key] = cast_value
@@ -142,7 +183,7 @@ def write_wandb_metadata(run, path: Path) -> None:
         "project": run.project,
         "entity": getattr(run, "entity", None),
         "group": run.group,
-        "url": run.get_url(),
+        "url": run.url,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -161,7 +202,9 @@ def main() -> int:
 
     process = subprocess.Popen(["/bin/bash", str(args.launch_script)], cwd=args.run_dir)
     tailer = CsvTailer(args.stats_file)
+    stdout_tailer = StdoutTailer(args.run_dir / "stdout.log")
     last_metrics: dict[str, object] = {}
+    seen_stdout_steps: set[int] = set()
 
     try:
         while True:
@@ -169,6 +212,13 @@ def main() -> int:
             for row in rows:
                 iteration, metrics = row_to_metrics(row)
                 last_metrics = metrics
+                if wandb_run is not None:
+                    wandb_run.log(metrics, step=iteration)
+            for iteration, metrics in stdout_tailer.read_metrics():
+                if iteration in seen_stdout_steps:
+                    continue
+                seen_stdout_steps.add(iteration)
+                last_metrics.update(metrics)
                 if wandb_run is not None:
                     wandb_run.log(metrics, step=iteration)
             if process.poll() is not None:
@@ -179,6 +229,13 @@ def main() -> int:
         for row in rows:
             iteration, metrics = row_to_metrics(row)
             last_metrics = metrics
+            if wandb_run is not None:
+                wandb_run.log(metrics, step=iteration)
+        for iteration, metrics in stdout_tailer.read_metrics():
+            if iteration in seen_stdout_steps:
+                continue
+            seen_stdout_steps.add(iteration)
+            last_metrics.update(metrics)
             if wandb_run is not None:
                 wandb_run.log(metrics, step=iteration)
 
