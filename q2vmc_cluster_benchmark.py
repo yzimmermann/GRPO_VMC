@@ -1040,7 +1040,21 @@ python -m pip install -U wandb
 rm -rf "$LAPJAX_ROOT/build" "$LAPJAX_ROOT/dist"
 find "$LAPJAX_ROOT" -maxdepth 1 -name '*.egg-info' -exec rm -rf {{}} +
 
-python -m pip install --no-build-isolation --no-use-pep517 "$LAPJAX_ROOT"
+# LapJAX's legacy setup.py creates a temporary generated package tree and then
+# deletes it in post_setup(); make that cleanup non-fatal and use setup.py
+# directly to avoid PEP517 metadata-generation issues on clusters.
+python - <<'PY'
+from pathlib import Path
+
+setup_path = Path(r"$LAPJAX_ROOT") / "setup.py"
+text = setup_path.read_text(encoding="utf-8")
+old = "  shutil.rmtree('lapjax')"
+new = "  shutil.rmtree('lapjax', ignore_errors=True)"
+if old in text:
+    setup_path.write_text(text.replace(old, new), encoding="utf-8")
+PY
+
+(cd "$LAPJAX_ROOT" && python setup.py install)
 python -m pip install --no-build-isolation --no-deps -e "$LAPNET_ROOT"
 
 cat <<EOF
